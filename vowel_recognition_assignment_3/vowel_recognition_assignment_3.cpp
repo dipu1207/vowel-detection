@@ -15,23 +15,23 @@ double weights[] = {1.0,3.0,7.0,13.0,19.0,22.0,25.0,33.0,42.0,50.0,56.0,61.0};
 int StartIndex =0;
 //here we will set start index of each recording
 void findStart(FILE* filepointer)
-{   StartIndex=0;
-	long double energy=0.0,maxEnergy=0.0;
-	long double tempArray[320];
+{   long double max=0.0;
+	StartIndex=0;
 	char input[20];
 	long double samplevalue=0.0;
 	if(!filepointer)
 		{printf("start index cannnot be found\n");
-	       return ;}
+	       return ;
+	      }
 	
-		   int i=10,framesize=0,count=0;
+		   int i=10,count=0;
 		  
 		/*
 		we are using i to skip 10 strings as they are discription and not data 
 		then we are using framesize to count upto 320 samples in each frame 
 		we are using count to store count of frames when max energy moved from its previous frame to new frame 
 		*/
-		   while(!feof(filepointer))
+		  while(!feof(filepointer))
 	     {  
 		   fscanf(filepointer,"%s",input);
 		   samplevalue=atof(input);
@@ -42,31 +42,20 @@ void findStart(FILE* filepointer)
 		   }
 		   else
 		   {
-			   if(framesize==320)
-			   { 
-				   framesize=0;
-				   if(maxEnergy<energy)
+			      if(max < samplevalue)
 				      { 
 
-						  maxEnergy=energy;
-				          energy=0.0;
+						  max=samplevalue;
+				        
 						  StartIndex+=count;
 				          count=0;     
 				     }
 				   else
-				   count++;
-				}
-			   
-			   
-			   else{
-			    energy+=samplevalue*samplevalue;
-			    framesize++;
+				     count++;
+				  
 			   }
-
-
-		   }//end else
-	     }//end while
-	 
+            }//end while
+	
 	// after the function returns we would have startIndex of each recording 
 }
 //here we will do dc shift on text file and return vlaue of dc shift
@@ -138,7 +127,7 @@ long double dcShift(FILE * filepointer)
 	   } 
 	  min=abs(min);
 	long double avg=(long double)(max+min)/2;
-	 long double normalizeFactor=(long double)5000/avg;
+	 long double normalizeFactor=(long double)((max-5000)/max);
 	//normalizeFactor=(int) (normalizeFactor*100+0.5);
 	//normalizeFactor=(float)normalizeFactor/100;//rounding to one decimal place
 	fclose(filepointer);
@@ -230,7 +219,7 @@ void calculate_Cis(long double arr[],long double getCi[])
 	//put value in Ai array
 	for(int i=1;i<=P;i++)
 		Ai[i-1]=A[12][i];
-
+	
 	
 	
 	//now we calculate Cis 
@@ -342,10 +331,10 @@ void findVowel(long double testArray[5][12])
 			  DTcep+=weights[col]*((testArray[row][col]-refArr[row][col])*(testArray[row][col]-refArr[row][col]));
             }
 		  //put this in a array AllDTcep[5];
-		  AllDTcep[row]=DTcep;
+		  AllDTcep[row]=DTcep/12;
 	 }
 	 // now take average of AllDTcep array and store it in vowelPredictArray 	  
-  long double sum=0.0;
+   long double sum=0.0;
 	for(int itr=0;itr<5;itr++)
 		sum+=AllDTcep[itr];
 	sum=sum/5;
@@ -381,7 +370,7 @@ int _tmain(int argc, _TCHAR* argv[])
      long double sampleArr[320];
 	  long double ALLCi[10][5][12];
 	 long double AvgCi[5][12];
-	  char fileName[50];
+	  char fileName[100];
 	  char  sample[30];
       long double testArray[5][12];
 	  long double getCi[12];
@@ -408,7 +397,8 @@ int _tmain(int argc, _TCHAR* argv[])
 			//we first call the function findStart to get the start sample value
 			findStart(filepointer);
 			
-			filepointer=fopen(fileName,"r");//reset file pointer to start of file
+			
+			rewind(filepointer);//reset file pointer to start of file
 			//here we will call normalize function which will creater new files with normalized values
 		    long double dcOffset= dcShift(filepointer);
 			//initialize file pointer again
@@ -418,10 +408,10 @@ int _tmain(int argc, _TCHAR* argv[])
 		    		
 		  //here i will set the file pointer of this recording according to startIndex
 	
-	        skipvalues= (StartIndex-2)*320;//we will move our data till skipvalues no of samples
-	         
-			int i=10;//this is to skip first 10 strings 
-          
+	        skipvalues= (StartIndex)+10;//we will move our data till skipvalues no of samples
+	      
+			//this is to skip first 10 strings 
+       
 			while(!feof(filepointer))
 			{  
 			    fscanf(filepointer,"%s",sample);
@@ -469,7 +459,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			}// 5 frames per recording done
 		 }//one vowel done
 	
-			
+		
 			
          getAvgCi(ALLCi,AvgCi);//calculate avg of 50 rows of ci in 5 rows
 
@@ -528,10 +518,9 @@ int _tmain(int argc, _TCHAR* argv[])
 		    		
 		  //here i will set the file pointer of this recording according to startIndex
 	
-	        skipvalues= (StartIndex-2)*320;//we will move our data till skipvalues no of samples
+	        skipvalues= StartIndex+10;//we will move our data till skipvalues no of samples
 	         
-			int i=10;//this is to skip first 10 strings 
-          
+			
 			while(!feof(filepointer))
 			{  
 			    fscanf(filepointer,"%s",sample);
@@ -585,7 +574,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	 
 	}//all vowels taken 
 
-
+	
 return 0;
 }
 
